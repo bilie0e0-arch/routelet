@@ -1,0 +1,14 @@
+{
+  "_note": "List prices USD per 1M tokens. Snapshot at run time; update with a dedicated commit.",
+  "snapshot_date": "2026-06-01",
+  "models": {
+    "gpt-4o-2024-08-06":          { "input_per_1m": 2.50,  "output_per_1m": 10.00 },
+    "claude-sonnet-4-6-20260101": { "input_per_1m": 3.00,  "output_per_1m": 15.00 },
+    "claude-haiku-4-5-20251001":  { "input_per_1m": 0.80,  "output_per_1m": 4.00  },
+    "gemini-2.0-flash":           { "input_per_1m": 0.10,  "output_per_1m": 0.40  },
+    "llama-3.3-70b-versatile":    { "input_per_1m": 0.59,  "output_per_1m": 0.79  },
+    "llama-3.3-8b-instant":       { "input_per_1m": 0.05,  "output_per_1m": 0.08  },
+    "qwen2.5:1.5b":               { "input_per_1m": 0.00,  "output_per_1m": 0.00  },
+    "qwen2.5:3b":                 { "input_per_1m": 0.00,  "output_per_1m": 0.00  }
+  }
+}
