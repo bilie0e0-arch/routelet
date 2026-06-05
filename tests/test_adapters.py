@@ -1,5 +1,7 @@
+import json
 from unittest.mock import MagicMock, patch
 
+from routelet.adapters.anthropic import AnthropicAdapter
 from routelet.adapters.openai import OpenAIAdapter
 from routelet.core.request import Message, NormalizedRequest, ToolDefinition
 
@@ -64,3 +66,46 @@ def test_openai_adapter_normalizes_tool_calls(mocker: MagicMock) -> None:
         resp = adapter.call("gpt-4o-2024-08-06", _make_request(tools=True))
 
     assert resp.tool_calls == [{"id": "call_abc", "name": "bash", "arguments": '{"command": "ls"}'}]
+
+
+def test_anthropic_adapter_normalizes_text_response(mocker: MagicMock) -> None:
+    fake_block = MagicMock()
+    fake_block.type = "text"
+    fake_block.text = "Fixed."
+
+    fake_response = MagicMock()
+    fake_response.content = [fake_block]
+    fake_response.usage.input_tokens = 15
+    fake_response.usage.output_tokens = 3
+    fake_response.model = "claude-sonnet-4-6-20260101"
+
+    with patch("anthropic.Anthropic") as mock_client_class:
+        mock_client_class.return_value.messages.create.return_value = fake_response
+        adapter = AnthropicAdapter(api_key="test-key")
+        resp = adapter.call("claude-sonnet-4-6-20260101", _make_request())
+
+    assert resp.content == "Fixed."
+    assert resp.tool_calls == []
+
+
+def test_anthropic_adapter_normalizes_tool_use_response(mocker: MagicMock) -> None:
+    fake_block = MagicMock()
+    fake_block.type = "tool_use"
+    fake_block.id = "toolu_01"
+    fake_block.name = "bash"
+    fake_block.input = {"command": "ls"}
+
+    fake_response = MagicMock()
+    fake_response.content = [fake_block]
+    fake_response.usage.input_tokens = 20
+    fake_response.usage.output_tokens = 10
+    fake_response.model = "claude-sonnet-4-6-20260101"
+
+    with patch("anthropic.Anthropic") as mock_client_class:
+        mock_client_class.return_value.messages.create.return_value = fake_response
+        adapter = AnthropicAdapter(api_key="test-key")
+        resp = adapter.call("claude-sonnet-4-6-20260101", _make_request(tools=True))
+
+    assert resp.tool_calls == [
+        {"id": "toolu_01", "name": "bash", "arguments": json.dumps({"command": "ls"})}
+    ]
