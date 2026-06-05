@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import MagicMock
 
 from routelet.core.request import NormalizedResponse
@@ -53,3 +54,40 @@ def test_langchain_surface_invokes_router(mocker: MagicMock) -> None:
     result = lc.invoke([HumanMessage(content="hello")])
     assert result.content == "langchain response"
     router.route.assert_called_once()
+
+
+def test_pre_tool_use_hook_logs_tool_name() -> None:
+    from routelet.surfaces.claude_sdk import make_pre_tool_use_hook
+
+    log: list[str] = []
+    hook_fn = make_pre_tool_use_hook(on_tool=lambda name: log.append(name))
+
+    input_data = {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {"command": "ls"},
+        "tool_use_id": "toolu_01",
+        "session_id": "sess_abc",
+        "cwd": "/home/user",
+    }
+    result = asyncio.get_event_loop().run_until_complete(hook_fn(input_data, "toolu_01", None))
+
+    assert log == ["Bash"]
+    assert result == {}
+
+
+def test_post_tool_use_hook_returns_empty() -> None:
+    from routelet.surfaces.claude_sdk import make_post_tool_use_hook
+
+    hook_fn = make_post_tool_use_hook(on_result=lambda name, resp: None)
+    input_data = {
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Bash",
+        "tool_input": {"command": "ls"},
+        "tool_response": "file1.py\nfile2.py",
+        "tool_use_id": "toolu_01",
+        "session_id": "sess_abc",
+        "cwd": "/home/user",
+    }
+    result = asyncio.get_event_loop().run_until_complete(hook_fn(input_data, "toolu_01", None))
+    assert result == {}
