@@ -1,0 +1,66 @@
+from unittest.mock import MagicMock, patch
+
+from routelet.adapters.openai import OpenAIAdapter
+from routelet.core.request import Message, NormalizedRequest, ToolDefinition
+
+
+def _make_request(tools: bool = False) -> NormalizedRequest:
+    return NormalizedRequest(
+        messages=[
+            Message(role="system", content="You are a coding assistant."),
+            Message(role="user", content="Fix the bug."),
+        ],
+        tools=[
+            ToolDefinition(
+                name="bash",
+                description="Run shell command",
+                parameters={
+                    "type": "object",
+                    "properties": {"command": {"type": "string"}},
+                    "required": ["command"],
+                },
+            )
+        ]
+        if tools
+        else [],
+    )
+
+
+def test_openai_adapter_calls_api_and_returns_response(mocker: MagicMock) -> None:
+    fake_response = MagicMock()
+    fake_response.choices[0].message.content = "hello"
+    fake_response.choices[0].message.tool_calls = None
+    fake_response.usage.prompt_tokens = 10
+    fake_response.usage.completion_tokens = 5
+    fake_response.model = "gpt-4o-2024-08-06"
+
+    with patch("openai.OpenAI") as mock_client_class:
+        mock_client_class.return_value.chat.completions.create.return_value = fake_response
+        adapter = OpenAIAdapter(api_key="test-key")
+        resp = adapter.call("gpt-4o-2024-08-06", _make_request())
+
+    assert resp.content == "hello"
+    assert resp.tool_calls == []
+    assert resp.usage["input_tokens"] == 10
+    assert resp.usage["output_tokens"] == 5
+
+
+def test_openai_adapter_normalizes_tool_calls(mocker: MagicMock) -> None:
+    fake_tc = MagicMock()
+    fake_tc.id = "call_abc"
+    fake_tc.function.name = "bash"
+    fake_tc.function.arguments = '{"command": "ls"}'
+
+    fake_response = MagicMock()
+    fake_response.choices[0].message.content = None
+    fake_response.choices[0].message.tool_calls = [fake_tc]
+    fake_response.usage.prompt_tokens = 20
+    fake_response.usage.completion_tokens = 8
+    fake_response.model = "gpt-4o-2024-08-06"
+
+    with patch("openai.OpenAI") as mock_client_class:
+        mock_client_class.return_value.chat.completions.create.return_value = fake_response
+        adapter = OpenAIAdapter(api_key="test-key")
+        resp = adapter.call("gpt-4o-2024-08-06", _make_request(tools=True))
+
+    assert resp.tool_calls == [{"id": "call_abc", "name": "bash", "arguments": '{"command": "ls"}'}]
