@@ -41,3 +41,15 @@ def test_routelet_client_create_with_tools() -> None:
         ],
     )
     assert result is not None
+
+
+def test_langchain_surface_invokes_router(mocker: MagicMock) -> None:
+    from langchain_core.messages import HumanMessage
+
+    from routelet.surfaces.langchain import RouteletLangChain
+
+    router = _mock_router("langchain response")
+    lc = RouteletLangChain(router=router)
+    result = lc.invoke([HumanMessage(content="hello")])
+    assert result.content == "langchain response"
+    router.route.assert_called_once()
