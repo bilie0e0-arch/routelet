@@ -109,3 +109,27 @@ def test_anthropic_adapter_normalizes_tool_use_response(mocker: MagicMock) -> No
     assert resp.tool_calls == [
         {"id": "toolu_01", "name": "bash", "arguments": json.dumps({"command": "ls"})}
     ]
+
+
+def test_compat_adapters_use_correct_base_urls() -> None:
+    from routelet.adapters.compat import CerebrasAdapter, GoogleAdapter, GroqAdapter, OllamaAdapter
+
+    with patch("openai.OpenAI") as mock_class:
+        GroqAdapter(api_key="k")
+        _, kwargs = mock_class.call_args
+        assert "groq.com" in kwargs.get("base_url", "")
+
+    with patch("openai.OpenAI") as mock_class:
+        CerebrasAdapter(api_key="k")
+        _, kwargs = mock_class.call_args
+        assert "cerebras" in kwargs.get("base_url", "")
+
+    with patch("openai.OpenAI") as mock_class:
+        OllamaAdapter()
+        _, kwargs = mock_class.call_args
+        assert "localhost" in kwargs.get("base_url", "")
+
+    with patch("openai.OpenAI") as mock_class:
+        GoogleAdapter(api_key="k")
+        _, kwargs = mock_class.call_args
+        assert "generativelanguage" in kwargs.get("base_url", "")
