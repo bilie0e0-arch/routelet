@@ -25,6 +25,7 @@ class Router:
         self._adapters = adapters
         self._model_to_provider = model_to_provider
         self._telemetry = telemetry
+        self._pending_telemetry: list[asyncio.Task[None]] = []
 
     def route(self, request: NormalizedRequest) -> tuple[NormalizedResponse, RoutingDecision]:
         model = self._policy.select_model(request)
@@ -51,9 +52,15 @@ class Router:
 
         if self._telemetry is not None:
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self._telemetry.log(decision))
+                task = asyncio.get_running_loop().create_task(self._telemetry.log(decision))
+                self._pending_telemetry.append(task)
             except RuntimeError:
                 pass  # no running loop — telemetry skipped in sync context
 
         return response, decision
+
+    async def flush_telemetry(self) -> None:
+        """Await all pending telemetry writes. Call before closing the telemetry context."""
+        if self._pending_telemetry:
+            await asyncio.gather(*self._pending_telemetry, return_exceptions=True)
+            self._pending_telemetry.clear()

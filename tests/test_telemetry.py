@@ -1,4 +1,5 @@
 import time
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,7 @@ from routelet.telemetry.sqlite import SQLiteTelemetry
 
 def make_decision() -> RoutingDecision:
     return RoutingDecision(
-        request_id="req_001",
+        request_id=str(uuid.uuid4()),
         timestamp=time.time(),
         step_type=None,
         classifier_confidence=None,

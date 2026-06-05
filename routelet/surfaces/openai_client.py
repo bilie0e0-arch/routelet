@@ -69,8 +69,20 @@ def _build_request(
 
 
 def _to_openai_response(response: Any) -> SimpleNamespace:
-    """Return a minimal OpenAI-shaped response object."""
-    msg = SimpleNamespace(content=response.content, tool_calls=response.tool_calls or None)
+    """Return a minimal OpenAI-shaped response object matching the openai SDK shape."""
+    tool_calls = (
+        [
+            SimpleNamespace(
+                id=tc["id"],
+                type="function",
+                function=SimpleNamespace(name=tc["name"], arguments=tc["arguments"]),
+            )
+            for tc in response.tool_calls
+        ]
+        if response.tool_calls
+        else None
+    )
+    msg = SimpleNamespace(content=response.content, tool_calls=tool_calls)
     choice = SimpleNamespace(message=msg, finish_reason="stop")
     usage = SimpleNamespace(
         prompt_tokens=response.usage["input_tokens"],

@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import MagicMock
 
 from routelet.core.request import NormalizedResponse
@@ -56,7 +55,7 @@ def test_langchain_surface_invokes_router(mocker: MagicMock) -> None:
     router.route.assert_called_once()
 
 
-def test_pre_tool_use_hook_logs_tool_name() -> None:
+async def test_pre_tool_use_hook_logs_tool_name() -> None:
     from routelet.surfaces.claude_sdk import make_pre_tool_use_hook
 
     log: list[str] = []
@@ -70,13 +69,13 @@ def test_pre_tool_use_hook_logs_tool_name() -> None:
         "session_id": "sess_abc",
         "cwd": "/home/user",
     }
-    result = asyncio.get_event_loop().run_until_complete(hook_fn(input_data, "toolu_01", None))
+    result = await hook_fn(input_data, "toolu_01", None)
 
     assert log == ["Bash"]
     assert result == {}
 
 
-def test_post_tool_use_hook_returns_empty() -> None:
+async def test_post_tool_use_hook_returns_empty() -> None:
     from routelet.surfaces.claude_sdk import make_post_tool_use_hook
 
     hook_fn = make_post_tool_use_hook(on_result=lambda name, resp: None)
@@ -89,5 +88,5 @@ def test_post_tool_use_hook_returns_empty() -> None:
         "session_id": "sess_abc",
         "cwd": "/home/user",
     }
-    result = asyncio.get_event_loop().run_until_complete(hook_fn(input_data, "toolu_01", None))
+    result = await hook_fn(input_data, "toolu_01", None)
     assert result == {}

@@ -8,7 +8,7 @@ from routelet.telemetry.schema import RoutingDecision
 
 _CREATE = """
 CREATE TABLE IF NOT EXISTS routing_decisions (
-    request_id TEXT,
+    request_id TEXT PRIMARY KEY,
     timestamp REAL,
     step_type TEXT,
     classifier_confidence REAL,
@@ -48,7 +48,8 @@ class SQLiteTelemetry:
             await self._db.close()
 
     async def log(self, d: RoutingDecision) -> None:
-        assert self._db is not None
+        if self._db is None:
+            raise RuntimeError("SQLiteTelemetry must be used as an async context manager")
         await self._db.execute(
             _INSERT,
             (

@@ -22,6 +22,7 @@ class AnthropicAdapter(AdapterBase):
             "model": model,
             "messages": messages,
             "max_tokens": request.max_tokens,
+            "temperature": request.temperature,
         }
         if system:
             kwargs["system"] = system

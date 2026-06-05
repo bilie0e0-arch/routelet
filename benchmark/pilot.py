@@ -20,17 +20,17 @@ from routelet.core.router import Router
 from routelet.policies.naive import CheapPolicy, TopTierPolicy
 from routelet.telemetry.sqlite import SQLiteTelemetry
 
-ADAPTERS = {
-    "groq": GroqAdapter(api_key=os.environ["GROQ_API_KEY"]),
-    "anthropic": AnthropicAdapter(api_key=os.environ["ANTHROPIC_API_KEY"]),
-}
-MODEL_TO_PROVIDER = {
-    MODELS["cheap_groq"]: "groq",
-    MODELS["strong_anthropic"]: "anthropic",
-}
-
 
 async def main() -> None:
+    adapters = {
+        "groq": GroqAdapter(api_key=os.environ["GROQ_API_KEY"]),
+        "anthropic": AnthropicAdapter(api_key=os.environ["ANTHROPIC_API_KEY"]),
+    }
+    model_to_provider = {
+        MODELS["cheap_groq"]: "groq",
+        MODELS["strong_anthropic"]: "anthropic",
+    }
+
     dataset = load_dataset("princeton-nlp/SWE-bench_Verified", split="test")
     tasks = list(dataset)[:20]
 
@@ -38,8 +38,8 @@ async def main() -> None:
         for policy_cls, label in [(CheapPolicy, "cheap"), (TopTierPolicy, "top_tier")]:
             router = Router(
                 policy=policy_cls(),
-                adapters=ADAPTERS,
-                model_to_provider=MODEL_TO_PROVIDER,
+                adapters=adapters,
+                model_to_provider=model_to_provider,
                 telemetry=tel,
             )
             for task in tasks:
@@ -52,6 +52,8 @@ async def main() -> None:
                     f"model={decision.chosen_model} "
                     f"cost=${decision.list_price_cost_usd:.6f}"
                 )
+            # Flush telemetry before the next policy loop closes the router
+            await router.flush_telemetry()
 
 
 if __name__ == "__main__":

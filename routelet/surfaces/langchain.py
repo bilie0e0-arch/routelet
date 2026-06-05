@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from langchain_core.callbacks import CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
@@ -28,6 +29,7 @@ class RouteletLangChain(BaseChatModel):  # type: ignore[misc]
         self,
         messages: list[BaseMessage],
         stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
         request = NormalizedRequest(messages=_lc_to_normalized(messages))

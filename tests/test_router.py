@@ -1,5 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from routelet.core.request import Message, NormalizedRequest, NormalizedResponse
 from routelet.core.router import Router
 from routelet.policies.naive import CheapPolicy
@@ -15,7 +17,8 @@ def _make_response(model: str) -> NormalizedResponse:
     )
 
 
-def test_router_calls_policy_then_adapter_then_telemetry(mocker: MagicMock) -> None:
+@pytest.mark.asyncio  # type: ignore[misc]
+async def test_router_calls_policy_then_adapter_then_telemetry(mocker: MagicMock) -> None:
     policy = CheapPolicy()
     adapter = MagicMock()
     adapter.call.return_value = _make_response("llama-3.3-8b-instant")
@@ -37,6 +40,7 @@ def test_router_calls_policy_then_adapter_then_telemetry(mocker: MagicMock) -> N
     assert resp.content == "done"
     assert decision.chosen_model == "llama-3.3-8b-instant"
     adapter.call.assert_called_once()
+    assert len(router._pending_telemetry) == 1  # task was queued by create_task
 
 
 def test_router_decision_includes_cost(mocker: MagicMock) -> None:
