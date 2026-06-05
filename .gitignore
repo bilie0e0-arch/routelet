@@ -1,0 +1,11 @@
+.worktrees/
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.db
+dist/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
